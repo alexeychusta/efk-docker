@@ -1,0 +1,59 @@
+
+version: '3'
+
+services:
+  elasticsearch:
+    container_name: elasticsearch
+    image: ${ELASTICSERCH_IMAGE}
+    restart: unless-stopped
+#    environment:
+#      - "discovery.type=single-node"
+#      - "http.host=0.0.0.0"
+#      - "ES_JAVA_OPTS=-Xms712m -Xmx712m"
+#      - "node.name=nodename" 
+#      - "xpack.security.enabled=true"
+#      - "ELASTIC_PASSWORD=somethingsecret"
+#      - cluster.name=docker-cluster
+#      - bootstrap.memory_lock=true
+    ports:
+      - "9200:9200"
+    volumes:
+      - /opt/elasticsearch_data:/usr/share/elasticsearch/data
+      - `pwd`/elasticsearch/conf:/usr/share/elasticsearch/config
+         
+  kibana:
+    image: ${KIBANA_IMAGE}
+    restart: unless-stopped
+    ports:
+     - "5601:5601"
+    depends_on:
+      - elasticsearch
+    volumes:
+      - `pwd`/kibana/conf/kibana.yml:/usr/share/kibana/config/kibana.yml
+      - `pwd`/elasticsearch/conf/certs/http:/usr/share/kibana/config/certs
+        
+#    environment:
+#      - ELASTICSEARCH_URL=http://elasticsearch:9200
+#      - ELASTICSEARCH_USERNAME=elastic
+#      - ELASTICSEARCH_PASSWORD=somethingsecret
+
+  fluentd:
+#    image: ${FLUENTD_IMAGE}
+    build:
+      context: ./fluentd/context
+      dockerfile: Dockerfile
+    volumes:
+      - /var/log/nginx:/var/log/nginx
+      - ./fluentd/conf:/fluentd/etc
+    depends_on:
+      - elasticsearch
+    ports:
+      - "24224:24224"
+#      - 1514:1514/udp
+    environment:
+      - "FLUENTD_CONF=fluentd.conf"
+
+
+
+
+
